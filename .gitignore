@@ -1,0 +1,9 @@
+/agences_split
+*.ipynb
+Agence_00001.csv
+Agence_00046.csv
+.docx
+*.pkl
+LIVRABLES.jpg
+*.zip
+Agence_*
