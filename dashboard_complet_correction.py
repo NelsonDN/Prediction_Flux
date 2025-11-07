@@ -1524,7 +1524,7 @@ def page_optimisation():
                 
                 st.plotly_chart(fig_beac, use_container_width=True)
             else:
-                st.info("✅ Aucune intervention BEAC nécessaire pour ce jour")
+                st.info("Aucune intervention BEAC nécessaire pour ce jour")
         else:
             st.warning("Données BEAC introuvables")
         
