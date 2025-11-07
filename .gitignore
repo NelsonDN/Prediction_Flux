@@ -2,8 +2,12 @@
 *.ipynb
 Agence_00001.csv
 Agence_00046.csv
-.docx
+*.docx
 *.pkl
 LIVRABLES.jpg
 *.zip
 Agence_*
+*.pdf
+/agences_split_coffre_sept_2025
+Cahier de charge.xlsx
+Evolution des soldes des comptes et des clients.xlsx
