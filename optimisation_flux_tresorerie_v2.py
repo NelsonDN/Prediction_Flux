@@ -1479,6 +1479,42 @@ def add_table_with_data(doc, df, title=None):
 # 9. PIPELINE PRINCIPAL
 # ============================================================================
 
+
+
+def generer_csv_stocks_depuis_excel():
+    """
+    Génère le fichier CSV stocks_minimum_agences.csv depuis Excel
+    pour compatibilité avec le dashboard
+    """
+    print("[0/9] Génération CSV stocks minimum depuis Excel...")
+    print("-" * 80)
+    
+    filepath = 'Données pour la solutions streamlit - Avec code.xlsx'
+    
+    if not Path(filepath).exists():
+        raise FileNotFoundError(f"Fichier Excel introuvable: {filepath}")
+    
+    # Lire Feuil1
+    df_stocks = pd.read_excel(filepath, sheet_name='Feuil1', dtype={'Code_Agence': str})
+    df_stocks['Code_Agence'] = df_stocks['Code_Agence'].str.strip()
+    
+    # Convertir en millions pour le dashboard
+    df_stocks['Stock_Minimum_Millions'] = df_stocks['Stock_de_securite'].apply(
+        lambda x: float(str(x).replace(' ', '')) / 1_000_000
+    )
+    
+    # Garder seulement les colonnes nécessaires
+    df_stocks_export = df_stocks[['Code_Agence', 'Stock_Minimum_Millions']].copy()
+    
+    # Sauvegarder CSV
+    df_stocks_export.to_csv('stocks_minimum_agences.csv', index=False)
+    
+    print(f"✅ Fichier CSV généré: stocks_minimum_agences.csv")
+    print(f"   {len(df_stocks_export)} agences")
+    print()
+
+
+
 def main():
     """
     Pipeline principal d'execution
@@ -1489,6 +1525,12 @@ def main():
     print()
     
     try:
+
+        # ✅ ÉTAPE 0 : Générer CSV stocks depuis Excel
+        generer_csv_stocks_depuis_excel()
+
+
+
         # ====================================================================
         # ETAPE 1: SELECTION MODELE OPTIMAL
         # ====================================================================

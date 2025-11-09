@@ -473,10 +473,11 @@ def page_forecasting():
 # PAGE 3 : STOCKS MINIMUM
 # ============================================================================
 
+
 def page_stocks_minimum():
     """Page d'analyse des stocks minimum"""
     
-    st.markdown('<div class="main-header">DETERMINATION DES STOCKS MINIMUM</div>', 
+    st.markdown('<div class="main-header">STOCKS MINIMUM PAR AGENCE</div>', 
                 unsafe_allow_html=True)
     
     # Charger donnees stocks
@@ -486,243 +487,107 @@ def page_stocks_minimum():
         st.error("Fichier stocks_minimum_agences.csv introuvable")
         return
     
-    # Selection agence
-    agence_selectionnee = st.selectbox(
-        "Selectionner une agence",
-        CONFIG['agences'],
-        index=0,
-        key='stocks_agence'
-    )
+    # Vérifier structure
+    if 'Stock_Minimum_Millions' not in df_stocks.columns:
+        st.error("Structure CSV incorrecte. Régénérer avec le script Python.")
+        return
     
-    # Donnees de l'agence
-    data_agence = df_stocks[df_stocks['Code_Agence'] == agence_selectionnee].iloc[0]
-    
-    st.markdown("---")
-    
-    # Informations agence
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Stock Minimum (P5)", 
-                 f"{abs(data_agence['Stock_Minimum_Millions']):,.2f} M",
-                 help="5eme percentile - Standard Bale III")
-    
-    with col2:
-        st.metric("Mediane (P50)", 
-                 f"{abs(data_agence['P50_Mediane_M']):,.2f} M")
-    
-    with col3:
-        st.metric("Observations", 
-                 f"{data_agence['Nb_Observations']}")
+    st.markdown("""
+    <div class="info-box">
+    <b>Source :</b> Stocks de sécurité définis dans le fichier Excel source (Feuil1).<br>
+    Ces valeurs représentent les réserves minimales requises par agence pour assurer la continuité opérationnelle.
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Graphiques
-    tabs = st.tabs(["Distribution", "Boxplot", "Percentiles", "Comparaison Agences"])
+    # Onglets
+    tabs = st.tabs(["Vue d'ensemble", "Comparaison Agences", "Détails par Agence"])
     
-    # TAB 1: Histogramme
+    # TAB 1: Vue d'ensemble
     with tabs[0]:
-        st.markdown("**Distribution des Soldes Historiques avec Percentiles**")
-        
-        st.markdown("""
-        <div class="info-box">
-        <b>Interpretation :</b> Ce graphique montre la frequence des soldes observes.
-        Les lignes verticales representent les percentiles cles (P1, P5, P10, P25, P50, P75, P90, P95, P99).
-        Le stock minimum (P5) est la ligne rouge foncee.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Note: On ne peut pas regenerer l'histogramme exact sans les donnees brutes
-        # On affiche un graphique des percentiles
-        
-        percentiles_cols = ['P1_M', 'P5_M', 'P10_M', 'P25_M', 'P50_Mediane_M', 
-                           'P75_M', 'P90_M', 'P95_M', 'P99_M']
-        percentiles_labels = ['P1', 'P5', 'P10', 'P25', 'P50', 'P75', 'P90', 'P95', 'P99']
-        percentiles_values = [abs(data_agence[col]) for col in percentiles_cols]
-        
-        fig = go.Figure()
-        
-        colors_map = {
-            'P1': '#FF0000',
-            'P5': '#8B0000',
-            'P10': '#FFA500',
-            'P25': '#FFD700',
-            'P50': '#008000',
-            'P75': '#0000FF',
-            'P90': '#800080',
-            'P95': '#FF00FF',
-            'P99': '#FFC0CB'
-        }
-        
-        fig.add_trace(go.Bar(
-            x=percentiles_labels,
-            y=percentiles_values,
-            marker_color=[colors_map[p] for p in percentiles_labels],
-            text=[f"{v:,.1f}M" for v in percentiles_values],
-            textposition='outside'
-        ))
-        
-        fig.update_layout(
-            title=f"Percentiles - Agence {agence_selectionnee}",
-            xaxis_title="Percentile",
-            yaxis_title="Solde (Millions FCFA)",
-            height=500,
-            showlegend=False
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # TAB 2: Boxplot
-    with tabs[1]:
-        st.markdown("**Boite a Moustaches avec Quartiles**")
-        
-        st.markdown("""
-        <div class="info-box">
-        <b>Interpretation :</b> La boite represente les quartiles (Q1=P25, Q2=P50, Q3=P75).
-        Les moustaches s'etendent jusqu'aux valeurs extremes (Min et Max).
-        Le stock minimum (P5) est indique par la ligne rouge verticale.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Valeurs pour boxplot
-        q1 = abs(data_agence['P25_M'])
-        median = abs(data_agence['P50_Mediane_M'])
-        q3 = abs(data_agence['P75_M'])
-        minimum = abs(data_agence['Min_M'])
-        maximum = abs(data_agence['Max_M'])
-        p5 = abs(data_agence['P5_M'])
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Box(
-            q1=[q1],
-            median=[median],
-            q3=[q3],
-            lowerfence=[minimum],
-            upperfence=[maximum],
-            name=f"Agence {agence_selectionnee}",
-            marker_color='lightblue',
-            boxmean=True
-        ))
-        
-        # Ligne P5
-        fig.add_vline(x=p5, line_dash="dash", line_color="darkred", line_width=3,
-                     annotation_text=f"Stock Min (P5) = {p5:,.1f}M",
-                     annotation_position="top")
-        
-        fig.update_layout(
-            title="Distribution avec Quartiles",
-            xaxis_title="Solde (Millions FCFA)",
-            height=400,
-            showlegend=False
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Zones quartiles
-        st.markdown("**Repartition par Quartiles**")
+        st.markdown("**Statistiques Globales**")
         
         col1, col2, col3, col4 = st.columns(4)
         
+        total_stocks = df_stocks['Stock_Minimum_Millions'].sum()
+        stock_moyen = df_stocks['Stock_Minimum_Millions'].mean()
+        stock_min = df_stocks['Stock_Minimum_Millions'].min()
+        stock_max = df_stocks['Stock_Minimum_Millions'].max()
+        
         with col1:
-            st.markdown(f"""
-            <div style="background-color:#ffcccc;padding:1rem;border-radius:0.5rem;">
-            <b>Q1 (25% plus bas)</b><br>
-            Min - P25<br>
-            {minimum:,.1f}M - {q1:,.1f}M
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Total Stocks", f"{total_stocks:,.2f} M")
         
         with col2:
-            st.markdown(f"""
-            <div style="background-color:#ffffcc;padding:1rem;border-radius:0.5rem;">
-            <b>Q2 (25% suivants)</b><br>
-            P25 - P50<br>
-            {q1:,.1f}M - {median:,.1f}M
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Stock Moyen", f"{stock_moyen:,.2f} M")
         
         with col3:
-            st.markdown(f"""
-            <div style="background-color:#ccffcc;padding:1rem;border-radius:0.5rem;">
-            <b>Q3 (25% suivants)</b><br>
-            P50 - P75<br>
-            {median:,.1f}M - {q3:,.1f}M
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Stock Min", f"{stock_min:,.2f} M")
         
         with col4:
-            st.markdown(f"""
-            <div style="background-color:#ccccff;padding:1rem;border-radius:0.5rem;">
-            <b>Q4 (25% plus hauts)</b><br>
-            P75 - Max<br>
-            {q3:,.1f}M - {maximum:,.1f}M
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Stock Max", f"{stock_max:,.2f} M")
+        
+        st.markdown("---")
+        
+        # Distribution
+        st.markdown("**Distribution des Stocks Minimum**")
+        
+        fig_hist = go.Figure()
+        
+        fig_hist.add_trace(go.Histogram(
+            x=df_stocks['Stock_Minimum_Millions'],
+            nbinsx=15,
+            marker_color='#1f4788',
+            opacity=0.7
+        ))
+        
+        fig_hist.update_layout(
+            title="Répartition des Stocks Minimum",
+            xaxis_title="Stock Minimum (Millions FCFA)",
+            yaxis_title="Nombre d'Agences",
+            height=400
+        )
+        
+        st.plotly_chart(fig_hist, use_container_width=True)
     
-    # TAB 3: Tableau percentiles
-    with tabs[2]:
-        st.markdown("**Tableau Complet des Percentiles**")
+    # TAB 2: Comparaison agences
+    with tabs[1]:
+        st.markdown("**Classement des Agences par Stock Minimum**")
         
-        percentiles_data = {
-            'Percentile': percentiles_labels + ['Min', 'Max', 'Moyenne', 'Ecart-Type'],
-            'Valeur (Millions)': [abs(data_agence[col]) for col in percentiles_cols] + 
-                                [abs(data_agence['Min_M']), abs(data_agence['Max_M']),
-                                 abs(data_agence['Moyenne_M']), abs(data_agence['Ecart_Type_M'])]
-        }
+        df_stocks_sorted = df_stocks.sort_values('Stock_Minimum_Millions', ascending=False)
         
-        df_percentiles = pd.DataFrame(percentiles_data)
-        df_percentiles['Valeur (Millions)'] = df_percentiles['Valeur (Millions)'].apply(lambda x: f"{x:,.2f}")
-        
-        st.dataframe(df_percentiles, use_container_width=True)
-        
-        st.markdown("""
-        <div class="warning-box">
-        <b>Stock Minimum Recommande (P5) :</b> {:.2f} Millions FCFA<br><br>
-        <b>Justification :</b> Le 5eme percentile (P5) represente le niveau en dessous duquel
-        l'agence descend seulement 5% du temps. Ce seuil assure une protection a 95% tout en
-        evitant une immobilisation excessive de capital.
-        </div>
-        """.format(abs(data_agence['Stock_Minimum_Millions'])), unsafe_allow_html=True)
-    
-    # TAB 4: Comparaison agences
-    with tabs[3]:
-        st.markdown("**Comparaison Stocks Minimum - Toutes Agences**")
-        
-        df_stocks_sorted = df_stocks.sort_values('Stock_Minimum_Millions')
-        df_stocks_sorted['Stock_Abs'] = df_stocks_sorted['Stock_Minimum_Millions'].abs()
-        
-        fig = go.Figure()
-        
+        # Graphique
         colors = ['darkred' if i < 5 else 'darkgreen' if i >= len(df_stocks_sorted)-5 
                  else 'steelblue' for i in range(len(df_stocks_sorted))]
         
-        fig.add_trace(go.Bar(
+        fig_bar = go.Figure()
+        
+        fig_bar.add_trace(go.Bar(
             y=df_stocks_sorted['Code_Agence'],
-            x=df_stocks_sorted['Stock_Abs'],
+            x=df_stocks_sorted['Stock_Minimum_Millions'],
             orientation='h',
             marker_color=colors,
-            text=df_stocks_sorted['Stock_Abs'].apply(lambda x: f"{x:,.0f}M"),
+            text=df_stocks_sorted['Stock_Minimum_Millions'].apply(lambda x: f"{x:,.0f}M"),
             textposition='outside'
         ))
         
-        fig.update_layout(
-            title="Stocks Minimum par Agence (P5)",
+        fig_bar.update_layout(
+            title="Stocks Minimum par Agence",
             xaxis_title="Stock Minimum (Millions FCFA)",
             yaxis_title="Code Agence",
             height=800,
             showlegend=False
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig_bar, use_container_width=True)
         
-        # Legende
+        # Légende
         col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
             <div style="background-color:#8B0000;color:white;padding:0.5rem;text-align:center;">
-            5 stocks les plus eleves
+            5 stocks les plus élevés
             </div>
             """, unsafe_allow_html=True)
         
@@ -739,6 +604,80 @@ def page_stocks_minimum():
             5 stocks les plus bas
             </div>
             """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Tableau
+        st.markdown("**Tableau Détaillé**")
+        
+        df_display = df_stocks_sorted.copy()
+        df_display['Stock_Minimum_Millions'] = df_display['Stock_Minimum_Millions'].apply(
+            lambda x: f"{x:,.2f}"
+        )
+        
+        st.dataframe(df_display, use_container_width=True, height=600)
+    
+    # TAB 3: Détails par agence
+    with tabs[2]:
+        st.markdown("**Détails par Agence**")
+        
+        agence_selectionnee = st.selectbox(
+            "Sélectionner une agence",
+            df_stocks['Code_Agence'].tolist(),
+            index=0
+        )
+        
+        data_agence = df_stocks[df_stocks['Code_Agence'] == agence_selectionnee].iloc[0]
+        stock_agence = data_agence['Stock_Minimum_Millions']
+        
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                "Stock Minimum", 
+                f"{stock_agence:,.2f} M",
+                help="Réserve minimale requise"
+            )
+        
+        with col2:
+            rang = df_stocks_sorted.index[df_stocks_sorted['Code_Agence'] == agence_selectionnee].tolist()[0] + 1
+            st.metric("Rang", f"{rang}/{len(df_stocks)}")
+        
+        with col3:
+            pct_du_total = (stock_agence / total_stocks) * 100
+            st.metric("% du Total", f"{pct_du_total:.2f}%")
+        
+        st.markdown("---")
+        
+        # Comparaison visuelle
+        st.markdown("**Position par rapport aux autres agences**")
+        
+        fig_comp = go.Figure()
+        
+        # Barres pour toutes les agences
+        colors_comp = ['darkred' if code == agence_selectionnee else 'lightgray' 
+                      for code in df_stocks_sorted['Code_Agence']]
+        
+        fig_comp.add_trace(go.Bar(
+            y=df_stocks_sorted['Code_Agence'],
+            x=df_stocks_sorted['Stock_Minimum_Millions'],
+            orientation='h',
+            marker_color=colors_comp,
+            showlegend=False
+        ))
+        
+        fig_comp.update_layout(
+            title=f"Position de l'agence {agence_selectionnee}",
+            xaxis_title="Stock Minimum (Millions FCFA)",
+            yaxis_title="Agence",
+            height=800
+        )
+        
+        st.plotly_chart(fig_comp, use_container_width=True)
+
+
 
 # ============================================================================
 # PAGE 4 : OPTIMISATION TRANSPORT
